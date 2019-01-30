@@ -1,0 +1,41 @@
+#!/bin/bash
+#
+# Simple Redis init.d script conceived to work on Linux systems
+# as it does use of the /pro filesystem.
+# chkconfig:2345 90 10
+# description:Redis is a persistent key-value database
+IP=`ifconfig ens33 | awk '/netmask/{print $2}'`
+REDISPORT=7004
+EXEC=/usr/local/bin/redis-server
+CLIEXEC=/usr/local/bin/redis-cli
+PIDFILE=/var/run/redis_${REDISPORT}.pid
+CONF=/data/soft/redis_cluster/${REDISPORT}/redis.conf
+
+case $1 in
+    start)
+    if [ -f $PIDFILE ];then
+        echo "redis has running"
+    else
+        echo "redis is starting..."
+        $EXEC $CONF
+    fi
+    ;;
+    stop)
+    if [ ! -f $PIDFILE ];then
+        echo "redis has stopped"
+    else
+        PID=`cat $PIDFILE`
+        echo "redis is stopping"
+        $CLIEXEC -h $IP -c -p $REDISPORT shutdown
+        while [ -x /proc/$PID ]
+        do
+            echo "waiting redis stopping"
+        done
+        sleep 1
+        echo "redis has stopped"
+    fi
+    ;;
+    *)
+    echo "Please use start or stop as first argument"
+    ;;
+esac
